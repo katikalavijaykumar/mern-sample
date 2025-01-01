@@ -1,0 +1,20 @@
+name: Build and push image to Docker hub
+on:
+  push:
+    branches:
+      - main
+
+
+jobs:
+  publish_images:
+    runs_on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: Build image
+        run: docker build ./client/ -t punidha/punidha-app:v1.0
+
+
+      - name: push image to docker hub
+        run: |
+          docker punidha/punidha-app:v1.0
