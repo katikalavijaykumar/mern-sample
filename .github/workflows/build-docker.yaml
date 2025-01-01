@@ -18,4 +18,5 @@ jobs:
 
       - name: push image to docker hub
         run: |
+          docker login -u punidha -p ${{ secrets.DOCKER_HUB_TOKEN }}
           docker punidha/punidha-app:v1.0
