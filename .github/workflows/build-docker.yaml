@@ -29,7 +29,7 @@ jobs:
           docker push punidha/front:v1.0
 
       # Step 4: SSH into EC2 instance and pull the image from Docker Hub
-  jobs:
+  
     deploy-server:
       needs: build and push
       runs-on: ubuntu-24.04
