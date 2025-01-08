@@ -1,22 +1,43 @@
-name: Build and push image to Docker hub
+name: Build, Push and Deploy Docker image to EC2
 on:
   push:
     branches:
       - main
       - punidha
 
-
 jobs:
-  build:
+  build_and_deploy:
     runs-on: ubuntu-24.04
+
     steps:
-      - name: checkout
+      # Step 1: Checkout the repository code
+      - name: Checkout code
         uses: actions/checkout@v4
-      - name: Build image
-        run: docker build ./client/ -t punidha/punidha-app:v1.0
 
+      # Step 2: Build Docker image
+      - name: Build Docker image
+        run: docker build ./client/ -t punidha/front:v1.0
 
-      - name: push image to docker hub
+      # Step 3: Log in to Docker Hub and push the image
+      - name: Log in to Docker Hub
         run: |
-          docker login -u punidha -p ${{ secrets.DOCKER_HUB_TOKEN }}
-          docker push punidha/punidha-app:v1.0
+          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.EC2token }}
+        
+      - name: Push Docker image to Docker Hub
+        run: |
+          docker push punidha/front:v1.0
+
+      # Step 4: SSH into EC2 instance and pull the image from Docker Hub
+      - name: SSH into EC2 and deploy Docker image
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ${{ secrets.SSH_PRIVATE_KEY }} ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }} << 'EOF'
+            # Pull the image from Docker Hub
+            docker pull punidha/front:v1.0
+
+  
+
+            # Run the Docker container
+            docker run -d --name front-container -p 80:3000 punidha/front:v1.0
+          EOF
+
+
