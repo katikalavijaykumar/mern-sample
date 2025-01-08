@@ -28,7 +28,7 @@ jobs:
           docker push punidha/front:v1.0
 
       # Step 4: SSH into EC2 instance and pull the image from Docker Hub
-      - name: SSH into EC2 and deploy Docker image
+      - name: SSH into EC2 and deploy docker image
         run: |
           echo "${{ secrets.EC2_SSH_KEY }}" > ec2_key.pem
           chmod 600 ec2_key.pem
