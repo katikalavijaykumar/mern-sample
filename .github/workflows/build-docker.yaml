@@ -34,26 +34,26 @@ jobs:
       needs: build and push
       runs-on: ubuntu-24.04
       steps:
-        - name:  deploy on EC2
-          uses: appleboy/ssh-action@v0.1.5 
-          with:
-            host: ${{ secrets.REMOTE_HOST }}
-            username: ${{ secrets.REMOTE_USER }}
-            key: ${{ secrets.SSH_PRIVATE_KEY}}
-            port: 80
-            script: |
-              # Install Docker if not installed
-              if ! command -v docker &> /dev/null; then
-                sudo apt-get update -y
-                sudo apt-get install -y docker.io
-                sudo systemctl start docker
-                sudo systemctl enable docker
-              fi
-              # Pull and run server container with sudo
-              sudo docker pull punidha/punidha-app:v1.0
-              sudo docker stop punidha-app-container || true
-              sudo docker rm punidha-app-container || true
-              sudo docker run -d --name punidha-app-container -p 80:3000 punidha/punidha-app:v1.0  
+      - name:  deploy on EC2
+        uses: appleboy/ssh-action@v0.1.5 
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY}}
+          port: 80
+          script: |
+            # Install Docker if not installed
+            if ! command -v docker &> /dev/null; then
+              sudo apt-get update -y
+              sudo apt-get install -y docker.io
+              sudo systemctl start docker
+              sudo systemctl enable docker
+            fi
+            # Pull and run server container with sudo
+            sudo docker pull punidha/punidha-app:v1.0
+            sudo docker stop gallant_hodgkin-container || true
+            sudo docker rm gallant_hodgkin-container || true
+            sudo docker run -d --name gallant_hodgkin-container -p 80:3000 punidha/punidha-app:v1.0  
            
-              # Clean up unused Docker images
-              sudo docker image prune -f
+            # Clean up unused Docker images
+            sudo docker image prune -f
