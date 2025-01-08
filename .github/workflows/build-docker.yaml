@@ -33,14 +33,12 @@ jobs:
           echo "${{ secrets.EC2_SSH_KEY }}" > ec2_key.pem
           chmod 600 ec2_key.pem
           ssh -o StrictHostKeyChecking=no -i ec2_key.pem ${{ secrets.REMOTE_USER }}@${{ secrets.REMOTE_HOST }} << 'EOF'
-      # Pull the image from Docker Hub
+            # Pull the image from Docker Hub
             docker pull punidha/front:v1.0
-
-      # Stop and remove any existing container (optional)
+ 
+            # Stop and remove any existing container (optional)
             docker rm -f front-container || true
 
-      # Run the Docker container
+            # Run the Docker container
             docker run -d --name front-container -p 80:80 punidha/front:v1.0
-      EOF
-
-
+          EOF
