@@ -1,6 +1,5 @@
-name: Push-to-EC2
 
-# Trigger deployment only on push to main branch
+name: Build, Push and Deploy Docker image to EC2
 on:
   push:
     branches:
@@ -8,27 +7,53 @@ on:
       - punidha
 
 jobs:
-  deploy:
-    name: Deploy to EC2 on master branch push
+  build_and_deploy:
     runs-on: ubuntu-24.04
 
     steps:
-      - name: Checkout the files
-        uses: actions/checkout@v2
+      # Step 1: Checkout the repository code
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Deploy to Server 1
-        uses: easingthemes/ssh-deploy@main
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY}}
-          REMOTE_HOST: ${{ secrets.REMOTE_HOST}}
-          REMOTE_USER: ${{ secrets.REMOTE_USER }}
-          TARGET: ${{ secrets.TARGET}}
+      # Step 2: Build Docker image
+      - name: Build Docker image
+        run: docker build ./client/ -t punidha/front:v1.0
 
-      - name: Executing remote ssh commands using ssh key
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.REMOTE_HOST}}
-          username: ${{ secrets.DOCKER_USERNAME }}
-          key: ${{ secrets.EC2token}}
-          script: |
-            sudo apt-get -y update
+      # Step 3: Log in to Docker Hub and push the image
+      - name: Log in to Docker Hub
+        run: |
+          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.EC2token }}
+        
+      - name: Push Docker image to Docker Hub
+        run: |
+          docker push punidha/front:v1.0
+
+      # Step 4: SSH into EC2 instance and pull the image from Docker Hub
+  jobs:
+    deploy-server:
+      needs: build and push
+      runs-on: ubuntu-24.04
+      steps:
+        - name:  deploy on EC2
+          uses: appleboy/ssh-action@v0.1.5 
+          with:
+            host: ${{ secrets.REMOTE_HOST }}
+            username: ${{ secrets.REMOTE_USER }}
+            key: ${{ secrets.SSH_PRIVATE_KEY}}
+            port: 80
+            script: |
+              # Install Docker if not installed
+              if ! command -v docker &> /dev/null; then
+                sudo apt-get update -y
+                sudo apt-get install -y docker.io
+                sudo systemctl start docker
+                sudo systemctl enable docker
+              fi
+              # Pull and run server container with sudo
+              sudo docker pull punidha/punidha-app:v1.0
+              sudo docker stop punidha-app-container || true
+              sudo docker rm punidha-app-container || true
+              sudo docker run -d --name punidha-app-container -p 80:3000 punidha/punidha-app:v1.0  
+           
+              # Clean up unused Docker images
+              sudo docker image prune -f
