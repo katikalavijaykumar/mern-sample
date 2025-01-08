@@ -1,0 +1,58 @@
+name: Build, Push and Deploy Docker image to EC2
+on:
+  push:
+    branches:
+      - main
+      - punidha
+
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the repository code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Build Docker image
+      - name: Build Docker image
+        run: docker build ./client/ -t punidha/punidha-app:v1.0
+
+      # Step 3: Log in to Docker Hub and push the image
+      - name: Log in to Docker Hub
+        run: |
+          docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.EC2token }}
+        
+      - name: Push Docker image to Docker Hub
+        run: |
+          docker push punidha/punidha-app:v1.0
+
+  deploy_server:
+    needs: build_and_push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy on EC2
+        uses: appleboy/ssh-action@v0.1.5
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            # Install Docker if not installed
+            if ! command -v docker &> /dev/null; then
+              sudo apt-get update -y
+              sudo apt-get install -y docker.io
+              sudo systemctl start docker
+              sudo systemctl enable docker
+            fi
+
+            # Pull and run server container with sudo
+            sudo docker pull punidha/punidha-app:v1.0
+            sudo docker stop gallant_hodgkin-container || true
+            sudo docker rm gallant_hodgkin-container || true
+            sudo docker run -d --name gallant_hodgkin-container -p 80:3000 punidha/punidha-app:v1.0  
+
+            # Clean up unused Docker images
+            sudo docker image prune -f
