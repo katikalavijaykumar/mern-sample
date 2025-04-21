@@ -9,32 +9,27 @@ on:
 jobs:
   sonarqube:
     name: Analyze with SonarQube
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     steps:
-      # Checkout the code from the repository
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Set up Node.js (version 18 in this case)
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
 
-      # Install dependencies for both client and server
       - name: Install dependencies (client and server)
         run: |
           cd client && npm ci
           cd ../server && npm ci
 
-      # Run tests and collect coverage for both client and server
       - name: Run tests and collect coverage (client and server)
         run: |
           cd client && npm run test -- --coverage --watchAll=false --passWithNoTests
           cd ../server && npm run test -- --coverage --watchAll=false --passWithNoTests
 
-      # Combine lcov reports from client and server (if both exist)
       - name: Combine lcov reports
         run: |
           mkdir -p coverage
@@ -50,7 +45,6 @@ jobs:
             cp coverage/lcov-server.info coverage/lcov.info
           fi
 
-      # Run SonarQube analysis
       - name: Run SonarQube analysis
         uses: sonarsource/sonarqube-scan-action@master
         env:
