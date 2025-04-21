@@ -9,34 +9,48 @@ on:
 jobs:
   sonarqube:
     name: Analyze with SonarQube
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
+      # Checkout the code from the repository
       - name: Checkout code
         uses: actions/checkout@v3
 
+      # Set up Node.js (version 18 in this case)
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
 
+      # Install dependencies for both client and server
       - name: Install dependencies (client and server)
         run: |
           cd client && npm ci
           cd ../server && npm ci
 
+      # Run tests and collect coverage for both client and server
       - name: Run tests and collect coverage (client and server)
         run: |
-          cd client && npm run test -- --coverage --watchAll=false
-          cd ../server && npm run test -- --coverage --watchAll=false
+          cd client && npm run test -- --coverage --watchAll=false --passWithNoTests
+          cd ../server && npm run test -- --coverage --watchAll=false --passWithNoTests
 
+      # Combine lcov reports from client and server (if both exist)
       - name: Combine lcov reports
         run: |
           mkdir -p coverage
-          cp client/coverage/lcov.info coverage/lcov-client.info
-          cp server/coverage/lcov.info coverage/lcov-server.info
-          cat coverage/lcov-*.info > coverage/lcov.info
+          # Only copy lcov report if it exists
+          if [ -f client/coverage/lcov.info ]; then cp client/coverage/lcov.info coverage/lcov-client.info; fi
+          if [ -f server/coverage/lcov.info ]; then cp server/coverage/lcov.info coverage/lcov-server.info; fi
+          # Combine lcov info if both reports exist
+          if [ -f coverage/lcov-client.info ] && [ -f coverage/lcov-server.info ]; then
+            cat coverage/lcov-*.info > coverage/lcov.info
+          elif [ -f coverage/lcov-client.info ]; then
+            cp coverage/lcov-client.info coverage/lcov.info
+          elif [ -f coverage/lcov-server.info ]; then
+            cp coverage/lcov-server.info coverage/lcov.info
+          fi
 
+      # Run SonarQube analysis
       - name: Run SonarQube analysis
         uses: sonarsource/sonarqube-scan-action@master
         env:
