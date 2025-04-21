@@ -38,6 +38,3 @@
     ]
   }
 }
-"scripts": {
-  "test": "react-scripts test --coverage --watchAll=false --passWithNoTests"
-}
