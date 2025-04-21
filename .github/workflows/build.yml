@@ -1,27 +1,44 @@
-name: Build
+name: SonarQube Scan
 
 on:
   push:
     branches:
       - main
-
+  pull_request:
 
 jobs:
-  build:
-    name: Build and analyze
-    runs-on: windows-latest
-    
+  sonarqube:
+    name: Analyze with SonarQube
+    runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
-      - uses: SonarSource/sonarqube-scan-action@v5
+          node-version: '18'
+
+      - name: Install dependencies (client and server)
+        run: |
+          cd client && npm ci
+          cd ../server && npm ci
+
+      - name: Run tests and collect coverage (client and server)
+        run: |
+          cd client && npm run test -- --coverage --watchAll=false
+          cd ../server && npm run test -- --coverage --watchAll=false
+
+      - name: Combine lcov reports
+        run: |
+          mkdir -p coverage
+          cp client/coverage/lcov.info coverage/lcov-client.info
+          cp server/coverage/lcov.info coverage/lcov-server.info
+          cat coverage/lcov-*.info > coverage/lcov.info
+
+      - name: Run SonarQube analysis
+        uses: sonarsource/sonarqube-scan-action@master
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-      # If you wish to fail your job when the Quality Gate is red, uncomment the
-      # following lines. This would typically be used to fail a deployment.
-      # - uses: SonarSource/sonarqube-quality-gate-action@v1
-      #   timeout-minutes: 5
-      #   env:
-      #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
