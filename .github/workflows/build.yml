@@ -34,7 +34,7 @@ jobs:
           cd client
           npm run test -- --coverage --watchAll=false --passWithNoTests
 
-      - name: Run server tests and generate coverage
+      - name: Run server tests
         run: |
           cd server
           npm run test -- --coverage --watchAll=false --passWithNoTests || true
