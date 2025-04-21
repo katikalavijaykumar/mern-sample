@@ -30,7 +30,8 @@ jobs:
           cd client && npm run test -- --coverage --watchAll=false --passWithNoTests
           cd ../server && npm run test -- --coverage --watchAll=false --passWithNoTests
 
-      - name: Combine lcov reports
+           - name: Combine lcov reports
+        shell: bash
         run: |
           mkdir -p coverage
           # Only copy lcov report if it exists
@@ -44,6 +45,7 @@ jobs:
           elif [ -f coverage/lcov-server.info ]; then
             cp coverage/lcov-server.info coverage/lcov.info
           fi
+
 
       - name: Run SonarQube analysis
         uses: sonarsource/sonarqube-scan-action@master
